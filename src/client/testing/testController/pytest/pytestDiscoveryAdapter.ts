@@ -78,7 +78,6 @@ export class PytestTestDiscoveryAdapter implements ITestDiscoveryAdapter {
                 resource: uri,
             };
             const execService = await executionFactory.createActivatedEnvironment(creationOptions);
-            console.log('HIIII', pytestArgs);
             try {
                 execService.exec(
                     ['-m', 'pytest', '-p', 'vscode_pytest', '--collect-only'].concat(pytestArgs),
