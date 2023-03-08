@@ -2,7 +2,7 @@
     "name": "python",
     "displayName": "Python",
     "description": "IntelliSense (Pylance), Linting, Debugging (multi-threaded, remote), Jupyter Notebooks, code formatting, refactoring, unit tests, and more.",
-    "version": "2023.3.0-dev",
+    "version": "2023.5.0-dev",
     "featureFlags": {
         "usingNewInterpreterStorage": true
     },
@@ -376,6 +376,12 @@
         ],
         "configuration": {
             "properties": {
+                "python.activeStateToolPath": {
+                    "default": "state",
+                    "description": "%python.activeStateToolPath.description%",
+                    "scope": "machine-overridable",
+                    "type": "string"
+                },
                 "python.autoComplete.extraPaths": {
                     "default": [],
                     "description": "%python.autoComplete.extraPaths.description%",
@@ -421,6 +427,11 @@
                             "All",
                             "pythonSurveyNotification",
                             "pythonPromptNewToolsExt"
+                        ],
+                        "enumDescriptions": [
+                            "%python.experiments.All.description%",
+                            "%python.experiments.pythonSurveyNotification.description%",
+                            "%python.experiments.pythonPromptNewToolsExt.description%"
                         ]
                     },
                     "scope": "machine",
@@ -435,6 +446,11 @@
                             "All",
                             "pythonSurveyNotification",
                             "pythonPromptNewToolsExt"
+                        ],
+                        "enumDescriptions": [
+                            "%python.experiments.All.description%",
+                            "%python.experiments.pythonSurveyNotification.description%",
+                            "%python.experiments.pythonPromptNewToolsExt.description%"
                         ]
                     },
                     "scope": "machine",
@@ -1614,7 +1630,7 @@
                     "category": "Python",
                     "command": "python.reportIssue",
                     "title": "%python.command.python.reportIssue.title%",
-                    "when": "!virtualWorkspace && shellExecutionSupported && editorLangId == python"
+                    "when": "!virtualWorkspace && shellExecutionSupported"
                 },
                 {
                     "category": "Test",

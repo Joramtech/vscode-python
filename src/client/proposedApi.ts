@@ -125,20 +125,16 @@ export function buildProposedApi(
     const extensions = serviceContainer.get<IExtensions>(IExtensions);
     const envVarsProvider = serviceContainer.get<IEnvironmentVariablesProvider>(IEnvironmentVariablesProvider);
     function sendApiTelemetry(apiName: string, args?: unknown) {
-        setTimeout(() =>
-            extensions
-                .determineExtensionFromCallStack()
-                .then((info) => {
-                    sendTelemetryEvent(EventName.PYTHON_ENVIRONMENTS_API, undefined, {
-                        apiName,
-                        extensionId: info.extensionId,
-                    });
-                    traceVerbose(
-                        `Extension ${info.extensionId} accessed ${apiName} with args: ${JSON.stringify(args)}`,
-                    );
-                })
-                .ignoreErrors(),
-        );
+        extensions
+            .determineExtensionFromCallStack()
+            .then((info) => {
+                sendTelemetryEvent(EventName.PYTHON_ENVIRONMENTS_API, undefined, {
+                    apiName,
+                    extensionId: info.extensionId,
+                });
+                traceVerbose(`Extension ${info.extensionId} accessed ${apiName} with args: ${JSON.stringify(args)}`);
+            })
+            .ignoreErrors();
     }
     disposables.push(
         discoveryApi.onChanged((e) => {
@@ -149,6 +145,7 @@ export function buildProposedApi(
             }
             if (e.old) {
                 if (e.new) {
+                    traceVerbose('Python API env change detected', env.id, 'update');
                     onEnvironmentsChanged.fire({ type: 'update', env: convertEnvInfoAndGetReference(e.new) });
                     reportInterpretersChanged([
                         {
@@ -157,6 +154,7 @@ export function buildProposedApi(
                         },
                     ]);
                 } else {
+                    traceVerbose('Python API env change detected', env.id, 'remove');
                     onEnvironmentsChanged.fire({ type: 'remove', env: convertEnvInfoAndGetReference(e.old) });
                     reportInterpretersChanged([
                         {
@@ -166,6 +164,7 @@ export function buildProposedApi(
                     ]);
                 }
             } else if (e.new) {
+                traceVerbose('Python API env change detected', env.id, 'add');
                 onEnvironmentsChanged.fire({ type: 'add', env: convertEnvInfoAndGetReference(e.new) });
                 reportInterpretersChanged([
                     {
