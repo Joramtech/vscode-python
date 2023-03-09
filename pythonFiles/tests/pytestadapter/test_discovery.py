@@ -32,15 +32,15 @@ def test_error_collect(file, expected_error_num):
     "file, expected_const",
     [
         ("parametrize_tests.py", parametrize_tests_expected_output),
-        # ("empty_discovery.py", empty_discovery_pytest_expected_output),
-        # ("simple_pytest.py", simple_discovery_pytest_expected_output),
-        # (
-        #     "unittest_pytest_same_file.py",
-        #     unit_pytest_same_file_discovery_expected_output,
-        # ),
-        # ("unittest_folder", unittest_folder_discovery_expected_output),
-        # ("dual_level_nested_folder", dual_level_nested_folder_expected_output),
-        # ("double_nested_folder", double_nested_folder_expected_output),
+        ("empty_discovery.py", empty_discovery_pytest_expected_output),
+        ("simple_pytest.py", simple_discovery_pytest_expected_output),
+        (
+            "unittest_pytest_same_file.py",
+            unit_pytest_same_file_discovery_expected_output,
+        ),
+        ("unittest_folder", unittest_folder_discovery_expected_output),
+        ("dual_level_nested_folder", dual_level_nested_folder_expected_output),
+        ("double_nested_folder", double_nested_folder_expected_output),
     ],
 )
 def test_pytest_collect(file, expected_const):
