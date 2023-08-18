@@ -1,4 +1,4 @@
-// For format details, see https://aka.ms/devcontainer.json.
+devcontainers// For format details, see https://aka.ms/devcontainer.json.
 {
     "name": "VS Code Python Dev Container",
     // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
