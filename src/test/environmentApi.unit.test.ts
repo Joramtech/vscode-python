@@ -38,6 +38,7 @@ import {
     EnvironmentsChangeEvent,
     PythonExtension,
 } from '../client/api/types';
+import { JupyterPythonEnvironmentApi } from '../client/jupyter/jupyterIntegration';
 
 suite('Python Environment API', () => {
     const workspacePath = 'path/to/workspace';
@@ -74,14 +75,12 @@ suite('Python Environment API', () => {
         envVarsProvider = typemoq.Mock.ofType<IEnvironmentVariablesProvider>();
         extensions
             .setup((e) => e.determineExtensionFromCallStack())
-            .returns(() => Promise.resolve({ extensionId: 'id', displayName: 'displayName', apiName: 'apiName' }))
-            .verifiable(typemoq.Times.atLeastOnce());
+            .returns(() => Promise.resolve({ extensionId: 'id', displayName: 'displayName', apiName: 'apiName' }));
         interpreterPathService = typemoq.Mock.ofType<IInterpreterPathService>();
         configService = typemoq.Mock.ofType<IConfigurationService>();
         onDidChangeRefreshState = new EventEmitter();
         onDidChangeEnvironments = new EventEmitter();
         onDidChangeEnvironmentVariables = new EventEmitter();
-
         serviceContainer.setup((s) => s.get(IExtensions)).returns(() => extensions.object);
         serviceContainer.setup((s) => s.get(IInterpreterPathService)).returns(() => interpreterPathService.object);
         serviceContainer.setup((s) => s.get(IConfigurationService)).returns(() => configService.object);
@@ -94,13 +93,17 @@ suite('Python Environment API', () => {
 
         discoverAPI.setup((d) => d.onProgress).returns(() => onDidChangeRefreshState.event);
         discoverAPI.setup((d) => d.onChanged).returns(() => onDidChangeEnvironments.event);
+        discoverAPI.setup((d) => d.getEnvs()).returns(() => []);
+        const onDidChangePythonEnvironment = new EventEmitter<Uri>();
+        const jupyterApi: JupyterPythonEnvironmentApi = {
+            onDidChangePythonEnvironment: onDidChangePythonEnvironment.event,
+            getPythonEnvironment: (_uri: Uri) => undefined,
+        };
 
-        environmentApi = buildEnvironmentApi(discoverAPI.object, serviceContainer.object);
+        environmentApi = buildEnvironmentApi(discoverAPI.object, serviceContainer.object, jupyterApi);
     });
 
     teardown(() => {
-        // Verify each API method sends telemetry regarding who called the API.
-        extensions.verifyAll();
         sinon.restore();
     });
 
@@ -325,6 +328,12 @@ suite('Python Environment API', () => {
             },
         ];
         discoverAPI.setup((d) => d.getEnvs()).returns(() => envs);
+        const onDidChangePythonEnvironment = new EventEmitter<Uri>();
+        const jupyterApi: JupyterPythonEnvironmentApi = {
+            onDidChangePythonEnvironment: onDidChangePythonEnvironment.event,
+            getPythonEnvironment: (_uri: Uri) => undefined,
+        };
+        environmentApi = buildEnvironmentApi(discoverAPI.object, serviceContainer.object, jupyterApi);
         const actual = environmentApi.known;
         const actualEnvs = actual?.map((a) => (a as EnvironmentReference).internal);
         assert.deepEqual(
@@ -409,10 +418,10 @@ suite('Python Environment API', () => {
         // Update events
         events = [];
         expectedEvents = [];
-        const updatedEnv = cloneDeep(envs[0]);
-        updatedEnv.arch = Architecture.x86;
-        onDidChangeEnvironments.fire({ old: envs[0], new: updatedEnv });
-        expectedEvents.push({ env: convertEnvInfo(updatedEnv), type: 'update' });
+        const updatedEnv0 = cloneDeep(envs[0]);
+        updatedEnv0.arch = Architecture.x86;
+        onDidChangeEnvironments.fire({ old: envs[0], new: updatedEnv0 });
+        expectedEvents.push({ env: convertEnvInfo(updatedEnv0), type: 'update' });
         eventValues = events.map((e) => ({ env: (e.env as EnvironmentReference).internal, type: e.type }));
         assert.deepEqual(eventValues, expectedEvents);
 
@@ -423,6 +432,11 @@ suite('Python Environment API', () => {
         expectedEvents.push({ env: convertEnvInfo(envs[2]), type: 'remove' });
         eventValues = events.map((e) => ({ env: (e.env as EnvironmentReference).internal, type: e.type }));
         assert.deepEqual(eventValues, expectedEvents);
+
+        const expectedEnvs = [convertEnvInfo(updatedEnv0), convertEnvInfo(envs[1])].sort();
+        const knownEnvs = environmentApi.known.map((e) => (e as EnvironmentReference).internal).sort();
+
+        assert.deepEqual(expectedEnvs, knownEnvs);
     });
 
     test('updateActiveEnvironmentPath: no resource', async () => {

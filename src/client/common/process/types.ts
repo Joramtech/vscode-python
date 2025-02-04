@@ -26,9 +26,10 @@ export type SpawnOptions = ChildProcessSpawnOptions & {
     extraVariables?: NodeJS.ProcessEnv;
     outputChannel?: OutputChannel;
     stdinStr?: string;
+    useWorker?: boolean;
 };
 
-export type ShellOptions = ExecOptions & { throwOnStdErr?: boolean };
+export type ShellOptions = ExecOptions & { throwOnStdErr?: boolean; useWorker?: boolean };
 
 export type ExecutionResult<T extends string | Buffer> = {
     stdout: T;
@@ -55,7 +56,7 @@ export interface IProcessService extends IDisposable {
 export const IProcessServiceFactory = Symbol('IProcessServiceFactory');
 
 export interface IProcessServiceFactory {
-    create(resource?: Uri): Promise<IProcessService>;
+    create(resource?: Uri, options?: { doNotUseCustomEnvs: boolean }): Promise<IProcessService>;
 }
 
 export const IPythonExecutionFactory = Symbol('IPythonExecutionFactory');

@@ -16,10 +16,16 @@ import { DebuggerTypeName } from '../../../constants';
 import { DebugOptions, DebugPurpose, LaunchRequestArguments } from '../../../types';
 import { BaseConfigurationResolver } from './base';
 import { getProgram, IDebugEnvironmentVariablesService } from './helper';
+import {
+    CreateEnvironmentCheckKind,
+    triggerCreateEnvironmentCheckNonBlocking,
+} from '../../../../pythonEnvironments/creation/createEnvironmentTrigger';
+import { sendTelemetryEvent } from '../../../../telemetry';
+import { EventName } from '../../../../telemetry/constants';
 
 @injectable()
 export class LaunchConfigurationResolver extends BaseConfigurationResolver<LaunchRequestArguments> {
-    private isPythonSet = false;
+    private isCustomPythonSet = false;
 
     constructor(
         @inject(IDiagnosticsService)
@@ -38,7 +44,7 @@ export class LaunchConfigurationResolver extends BaseConfigurationResolver<Launc
         debugConfiguration: LaunchRequestArguments,
         _token?: CancellationToken,
     ): Promise<LaunchRequestArguments | undefined> {
-        this.isPythonSet = debugConfiguration.python !== undefined;
+        this.isCustomPythonSet = debugConfiguration.python !== undefined;
         if (
             debugConfiguration.name === undefined &&
             debugConfiguration.type === undefined &&
@@ -84,6 +90,8 @@ export class LaunchConfigurationResolver extends BaseConfigurationResolver<Launc
                 (item, pos) => debugConfiguration.debugOptions!.indexOf(item) === pos,
             );
         }
+        sendTelemetryEvent(EventName.ENVIRONMENT_CHECK_TRIGGER, undefined, { trigger: 'debug' });
+        triggerCreateEnvironmentCheckNonBlocking(CreateEnvironmentCheckKind.Workspace, workspaceFolder);
         return debugConfiguration;
     }
 
@@ -110,7 +118,9 @@ export class LaunchConfigurationResolver extends BaseConfigurationResolver<Launc
             debugConfiguration.envFile = settings.envFile;
         }
         let baseEnvVars: EnvironmentVariables | undefined;
-        if (this.isPythonSet) {
+        if (this.isCustomPythonSet || debugConfiguration.console !== 'integratedTerminal') {
+            // We only have the right activated environment present in integrated terminal if no custom Python path
+            // is specified. Otherwise, we need to explicitly set the variables.
             baseEnvVars = await this.environmentActivationService.getActivatedEnvironmentVariables(
                 workspaceFolder,
                 await this.interpreterService.getInterpreterDetails(debugConfiguration.python ?? ''),
@@ -135,14 +145,7 @@ export class LaunchConfigurationResolver extends BaseConfigurationResolver<Launc
         if (!Array.isArray(debugConfiguration.debugOptions)) {
             debugConfiguration.debugOptions = [];
         }
-        if (debugConfiguration.justMyCode === undefined) {
-            // Populate justMyCode using debugStdLib
-            debugConfiguration.justMyCode = !debugConfiguration.debugStdLib;
-        }
         const debugOptions = debugConfiguration.debugOptions!;
-        if (!debugConfiguration.justMyCode) {
-            LaunchConfigurationResolver.debugOption(debugOptions, DebugOptions.DebugStdLib);
-        }
         if (debugConfiguration.stopOnEntry) {
             LaunchConfigurationResolver.debugOption(debugOptions, DebugOptions.StopOnEntry);
         }
